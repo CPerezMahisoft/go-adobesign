@@ -228,3 +228,28 @@ func (s *AgreementService) GetCombinedDocument(ctx context.Context, agreementId 
 
 	return response, nil
 }
+
+type AgreementCancellationInfo struct {
+	Comment      string `json:"comment"`
+	NotifyOthers bool   `json:"notifyOthers"`
+}
+
+type UpdateAgreementRequest struct {
+	State                     string                    `json:"state"`
+	AgreementCancellationInfo AgreementCancellationInfo `json:"agreementCancellationInfo"`
+}
+
+// UpdateAgreementState updates the state of an existing Adobe Sign Agreement
+// ref: https://secure.na1.echosign.com/public/docs/restapi/v6#!/agreements/updateAgreementState
+func (s *AgreementService) UpdateAgreementState(ctx context.Context, agreementId string, request UpdateAgreementRequest) error {
+
+	u := fmt.Sprintf("%s/%s/state", agreementsPath, agreementId)
+
+	req, err := s.client.NewRequest("PUT", u, request)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.client.Do(ctx, req, nil)
+	return err
+}
