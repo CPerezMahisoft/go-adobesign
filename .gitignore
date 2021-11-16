@@ -13,6 +13,7 @@
 
 # IDE related
 .idea
+local/
 
 # Dependency directories (remove the comment below to include it)
 # vendor/

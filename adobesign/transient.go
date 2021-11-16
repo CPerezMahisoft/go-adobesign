@@ -8,7 +8,9 @@ import (
 	"mime/multipart"
 )
 
-// TransientDocumentService handles operations related to transient documents.
+const transientDocumentsPath = "transientDocuments"
+
+// TransientDocumentService handles operations related to agreement documents.
 //
 // ref: https://secure.na1.echosign.com/public/docs/restapi/v6#!/transientDocuments
 type TransientDocumentService service
@@ -18,8 +20,6 @@ type TransientDocument struct {
 }
 
 func (s *TransientDocumentService) UploadTransientDocument(ctx context.Context, file []byte, filename string, onBehalfOf string) (*TransientDocument, error) {
-
-	u := "transientDocuments"
 
 	// Create the multi-part form request
 	payload := &bytes.Buffer{}
@@ -35,7 +35,7 @@ func (s *TransientDocumentService) UploadTransientDocument(ctx context.Context, 
 		return nil, err
 	}
 
-	req, err := s.client.NewMultiPartRequest(u, payload)
+	req, err := s.client.NewMultiPartRequest(transientDocumentsPath, payload)
 	if err != nil {
 		return nil, err
 	}

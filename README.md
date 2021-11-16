@@ -10,11 +10,13 @@ Inspired by [go-github](https://github.com/google/go-github).
 
 ## Supported APIs
 
-- [x] [Transient]
-- [x] [Agreements]
+At the moment only certain parts of the `Agreements`, `Transient`, and `Webhook`
+APIs are supported as those are the ones I've needed so far.
+
+PRs to add support for other APIs are welcome!
 
 ### TODOs
-- [] Test
+- [ ] Test
 
 ## Usage
 

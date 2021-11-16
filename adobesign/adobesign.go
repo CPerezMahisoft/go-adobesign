@@ -62,6 +62,7 @@ type Client struct {
 	//// Services used for talking to different parts of the Adobe Sign API.
 	TransientDocumentService *TransientDocumentService
 	AgreementService         *AgreementService
+	WebhookService           *WebhookService
 }
 
 type service struct {
@@ -117,7 +118,7 @@ func NewOauth2Client(params Oauth2Params) *Client {
 // NewClient creates an adobe sign client using an Integration Key, this method is deprecated.
 // New integrations should use the NewOauth2Client method.
 // ref: https://helpx.adobe.com/sign/kb/how-to-create-an-integration-key.html
-func NewClient(integrationKey string, hostname string) *Client {
+func NewClient(integrationKey string, shard string) *Client {
 
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
@@ -125,7 +126,7 @@ func NewClient(integrationKey string, hostname string) *Client {
 	)
 	tc := oauth2.NewClient(ctx, ts)
 
-	return newClient(tc, fmt.Sprintf(apiBaseUrl, hostname))
+	return newClient(tc, fmt.Sprintf(apiBaseUrl, shard))
 }
 
 func newClient(httpClient *http.Client, baseUrl string) *Client {
@@ -140,6 +141,7 @@ func newClient(httpClient *http.Client, baseUrl string) *Client {
 
 	c.TransientDocumentService = (*TransientDocumentService)(&c.common)
 	c.AgreementService = (*AgreementService)(&c.common)
+	c.WebhookService = (*WebhookService)(&c.common)
 
 	return c
 }
@@ -224,11 +226,8 @@ type Response struct {
 	////
 	//// These fields support what is called "offset pagination" and should
 	//// be used with the ListOptions struct.
-	//NextPage  int
-	//PrevPage  int
-	//FirstPage int
-	//LastPage  int
-	//
+	NextCursor int
+
 	//// Explicitly specify the Rate type so Rate's String() receiver doesn't
 	//// propagate to Response.
 	//Rate Rate
@@ -241,7 +240,8 @@ type Response struct {
 // r must not be nil.
 func newResponse(r *http.Response) *Response {
 	response := &Response{Response: r}
-	//response.populatePageValues()
+	//TODO: response.populatePageValues()
+
 	//response.Rate = parseRate(r)
 	//response.TokenExpiration = parseTokenExpiration(r)
 	return response
@@ -462,10 +462,10 @@ func CheckResponse(r *http.Response) error {
 // support offset pagination.
 type ListOptions struct {
 	// Maximum number of Items to be returned (max limit: 100)
-	Limit int `url:"limit,omitempty"`
+	Cursor int `url:"cursor,omitempty"`
 
 	// 	Offset used for pagination if collection has more than limit items
-	Offset int `url:"offset,omitempty"`
+	PageSize int `url:"pageSize,omitempty"`
 }
 
 // addOptions adds the parameters in opts as URL query parameters to s. opts
@@ -492,8 +492,5 @@ func addOptions(s string, opts interface{}) (string, error) {
 
 //PageInfo holds the pagination information for a Adobe Sign API request
 type PageInfo struct {
-	Count  int `json:"count,omitempty"`
-	Limit  int `json:"limit,omitempty"`
-	Offset int `json:"offset,omitempty"`
-	Total  int `json:"total,omitempty"`
+	NextCursor int `json:"nextCursor,omitempty"`
 }
