@@ -15,7 +15,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/google/go-querystring/query"
 	"golang.org/x/oauth2"
@@ -26,8 +25,7 @@ const (
 	userAgent       = "go-adobesign"
 	apiBaseUrl      = "https://api.%s.adobesign.com/api/rest/v6/"
 
-	headerRateLimit     = "X-RateLimit-Limit"
-	headerRateRemaining = "X-RateLimit-Remaining"
+	headerRateLimit = "Retry-After"
 
 	headerApiVersion = "Accept-Version"
 )
@@ -242,9 +240,9 @@ type Response struct {
 	//// be used with the ListOptions struct.
 	NextCursor int
 
-	//// Explicitly specify the Rate type so Rate's String() receiver doesn't
-	//// propagate to Response.
-	//Rate Rate
+	// Explicitly specify the Rate type so Rate's String() receiver doesn't
+	// propagate to Response.
+	Rate Rate
 	//
 	//// token's expiration date
 	//TokenExpiration time.Time
@@ -254,33 +252,26 @@ type Response struct {
 // r must not be nil.
 func newResponse(r *http.Response) *Response {
 	response := &Response{Response: r}
+
 	//TODO: response.populatePageValues()
 
-	//response.Rate = parseRate(r)
+	response.Rate = parseRate(r)
 	//response.TokenExpiration = parseTokenExpiration(r)
 	return response
 }
 
 // Rate represents the rate limit for the current client.
+// ref: https://www.adobe.io/apis/documentcloud/sign/docs.html#!adobedocs/adobe-sign/master/api_usage/throttling.md
 type Rate struct {
-	// The number of requests per hour the client is currently limited to.
-	Limit int `json:"limit"`
-
-	// The number of remaining requests the client can make this hour.
-	Remaining int `json:"remaining"`
-
-	// The time at which the current rate limit will reset.
-	Reset time.Time `json:"reset"`
+	// RetryAfter is the number of seconds that the client should wait before retrying new requests.
+	RetryAfterSeconds int `json:"retryAfter"`
 }
 
 // parseRate parses the rate related headers.
 func parseRate(r *http.Response) Rate {
 	var rate Rate
-	if limit := r.Header.Get(headerRateLimit); limit != "" {
-		rate.Limit, _ = strconv.Atoi(limit)
-	}
-	if remaining := r.Header.Get(headerRateRemaining); remaining != "" {
-		rate.Remaining, _ = strconv.Atoi(remaining)
+	if wait := r.Header.Get(headerRateLimit); wait != "" {
+		rate.RetryAfterSeconds, _ = strconv.Atoi(wait)
 	}
 
 	return rate
@@ -297,7 +288,7 @@ type RateLimitError struct {
 func (r *RateLimitError) Error() string {
 	return fmt.Sprintf("%v %v: %d %v %v",
 		r.Response.Request.Method, r.Response.Request.URL,
-		r.Response.StatusCode, r.Message, time.Until(r.Rate.Reset))
+		r.Response.StatusCode, r.Message, r.Rate.RetryAfterSeconds)
 }
 
 // Is returns whether the provided error equals this error.
@@ -329,12 +320,12 @@ func compareHTTPResponse(r1, r2 *http.Response) bool {
 // checkRateLimitBeforeDo does not make any network calls, but uses existing knowledge from
 // current client state in order to quickly check if *RateLimitError can be immediately returned
 // from Client.Do, and if so, returns it so that Client.Do can skip making a network API call unnecessarily.
-// Otherwise it returns nil, and Client.Do should proceed normally.
+// Otherwise, it returns nil, and Client.Do should proceed normally.
 func (c *Client) checkRateLimitBeforeDo(req *http.Request) *RateLimitError {
 	c.rateMu.Lock()
 	rate := c.rateLimit
 	c.rateMu.Unlock()
-	if !rate.Reset.IsZero() && rate.Remaining == 0 && time.Now().Before(rate.Reset) {
+	if rate.RetryAfterSeconds > 0 {
 		// Create a fake response.
 		resp := &http.Response{
 			Status:     http.StatusText(http.StatusForbidden),
@@ -346,8 +337,8 @@ func (c *Client) checkRateLimitBeforeDo(req *http.Request) *RateLimitError {
 		return &RateLimitError{
 			Rate:     rate,
 			Response: resp,
-			Message: fmt.Sprintf("API rate limit of %v still exceeded until %v, not making remote request.",
-				rate.Limit, rate.Reset),
+			Message: fmt.Sprintf("API rate limit reached. Wait %v seconds before making more requests.",
+				rate.RetryAfterSeconds),
 		}
 	}
 
@@ -461,7 +452,7 @@ func CheckResponse(r *http.Response) error {
 	}
 
 	switch {
-	case r.StatusCode == http.StatusTooManyRequests && r.Header.Get(headerRateRemaining) == "0":
+	case r.StatusCode == http.StatusTooManyRequests && r.Header.Get(headerRateLimit) != "0":
 		return &RateLimitError{
 			Rate:     parseRate(r),
 			Response: errorResponse.Response,
