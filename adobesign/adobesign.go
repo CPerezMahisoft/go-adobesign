@@ -51,6 +51,9 @@ type Client struct {
 	// always be specified with a trailing slash.
 	BaseURL *url.URL
 
+	// Send requests impersonating user
+	ImpersonatedUser string
+
 	// User agent used when communicating with the Adobe Sign API.
 	UserAgent string
 
@@ -112,13 +115,13 @@ func NewOauth2Client(params Oauth2Params) *Client {
 		log.Fatal(err)
 	}
 
-	return newClient(conf.Client(ctx, tok), params.BaseUrl)
+	return newClient(conf.Client(ctx, tok), params.BaseUrl, "")
 }
 
 // NewClient creates an adobe sign client using an Integration Key, this method is deprecated.
 // New integrations should use the NewOauth2Client method.
 // ref: https://helpx.adobe.com/sign/kb/how-to-create-an-integration-key.html
-func NewClient(integrationKey string, shard string) *Client {
+func NewClient(integrationKey string, shard string, impersonating string) *Client {
 
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
@@ -126,10 +129,10 @@ func NewClient(integrationKey string, shard string) *Client {
 	)
 	tc := oauth2.NewClient(ctx, ts)
 
-	return newClient(tc, fmt.Sprintf(apiBaseUrl, shard))
+	return newClient(tc, fmt.Sprintf(apiBaseUrl, shard), impersonating)
 }
 
-func newClient(httpClient *http.Client, baseUrl string) *Client {
+func newClient(httpClient *http.Client, baseUrl string, impersonating string) *Client {
 	if httpClient == nil {
 		httpClient = &http.Client{}
 	}
@@ -139,11 +142,20 @@ func newClient(httpClient *http.Client, baseUrl string) *Client {
 	c := &Client{client: httpClient, BaseURL: baseURL, UserAgent: userAgent}
 	c.common.client = c
 
+	c.ImpersonatedUser = impersonating
+
 	c.TransientDocumentService = (*TransientDocumentService)(&c.common)
 	c.AgreementService = (*AgreementService)(&c.common)
 	c.WebhookService = (*WebhookService)(&c.common)
 
 	return c
+}
+
+func (c *Client) impersonate(req *http.Request) *http.Request {
+	if c.ImpersonatedUser != "" {
+		req.Header.Set("x-on-behalf-of-user", fmt.Sprintf("email:%s", c.ImpersonatedUser))
+	}
+	return req
 }
 
 func (c *Client) NewMultiPartRequest(urlStr string, body io.ReadWriter) (*http.Request, error) {
@@ -162,6 +174,7 @@ func (c *Client) NewMultiPartRequest(urlStr string, body io.ReadWriter) (*http.R
 
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set(headerApiVersion, oauthApiVersion)
+	req = c.impersonate(req)
 
 	if c.UserAgent != "" {
 		req.Header.Set("User-Agent", c.UserAgent)
@@ -206,6 +219,7 @@ func (c *Client) NewRequest(method, urlStr string, body interface{}) (*http.Requ
 
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set(headerApiVersion, oauthApiVersion)
+	req = c.impersonate(req)
 
 	if c.UserAgent != "" {
 		req.Header.Set("User-Agent", c.UserAgent)

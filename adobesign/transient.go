@@ -19,7 +19,7 @@ type TransientDocument struct {
 	TransientDocumentId string `json:"transientDocumentId"`
 }
 
-func (s *TransientDocumentService) UploadTransientDocument(ctx context.Context, file []byte, filename string, onBehalfOf string) (*TransientDocument, error) {
+func (s *TransientDocumentService) UploadTransientDocument(ctx context.Context, file []byte, filename string) (*TransientDocument, error) {
 
 	// Create the multi-part form request
 	payload := &bytes.Buffer{}
@@ -41,9 +41,6 @@ func (s *TransientDocumentService) UploadTransientDocument(ctx context.Context, 
 	}
 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	if onBehalfOf != "" { //impersonate user
-		req.Header.Set("x-api-user", fmt.Sprintf("email:%s", onBehalfOf))
-	}
 
 	var response *TransientDocument
 	if _, err := s.client.Do(ctx, req, &response); err != nil {

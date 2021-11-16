@@ -2,7 +2,6 @@ package adobesign
 
 import (
 	"context"
-	"fmt"
 )
 
 // WebhookService handles operations related to webhooks.
@@ -73,15 +72,11 @@ type CreateWebhookResponse struct {
 // CreateWebhook creates a new Adobe Sign Agreement
 // ref: https://secure.na1.echosign.com/public/docs/restapi/v6#!/webhooks/createWebhook
 // requires: `webhook_write` permissions https://secure.na1.echosign.com/public/static/oauthDoc.jsp#scope-webhook_write
-func (s *WebhookService) CreateWebhook(ctx context.Context, request CreateWebhookRequest, onBehalfOf string) (*CreateWebhookResponse, error) {
+func (s *WebhookService) CreateWebhook(ctx context.Context, request CreateWebhookRequest) (*CreateWebhookResponse, error) {
 
 	req, err := s.client.NewRequest("POST", webhooksPath, request)
 	if err != nil {
 		return nil, err
-	}
-
-	if onBehalfOf != "" { //impersonate user
-		req.Header.Set("x-on-behalf-of-user", fmt.Sprintf("email:%s", onBehalfOf))
 	}
 
 	var response *CreateWebhookResponse

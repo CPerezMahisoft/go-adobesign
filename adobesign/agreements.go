@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+const agreementsPath = "agreements"
+
 // AgreementService handles operations related to agreements
 //
 // ref: https://secure.na1.echosign.com/public/docs/restapi/v6#!/agreements
@@ -62,9 +64,9 @@ type ParticipantSetInfo struct {
 	VisiblePages   []string     `json:"visiblePages,omitempty"`
 }
 
-// CreateAgreementRequest defines the request body for creating an agreement
+// Agreement defines the request body for creating an agreement
 // ref: https://secure.na1.echosign.com/public/docs/restapi/v6#!/agreements/createAgreement
-type CreateAgreementRequest struct {
+type Agreement struct {
 	FileInfos           []FileInfo           `json:"fileInfos,omitempty"`
 	Name                string               `json:"name,omitempty"`
 	ParticipantSetsInfo []ParticipantSetInfo `json:"participantSetsInfo,omitempty"`
@@ -156,17 +158,11 @@ type CreateAgreementResponse struct {
 
 // CreateAgreement creates a new Adobe Sign Agreement
 // ref: https://secure.na1.echosign.com/public/docs/restapi/v6#!/agreements/createAgreement
-func (s *AgreementService) CreateAgreement(ctx context.Context, request CreateAgreementRequest, onBehalfOf string) (*CreateAgreementResponse, error) {
+func (s *AgreementService) CreateAgreement(ctx context.Context, request Agreement) (*CreateAgreementResponse, error) {
 
-	u := "agreements"
-
-	req, err := s.client.NewRequest("POST", u, request)
+	req, err := s.client.NewRequest("POST", agreementsPath, request)
 	if err != nil {
 		return nil, err
-	}
-
-	if onBehalfOf != "" { //impersonate user
-		req.Header.Set("x-on-behalf-of-user", fmt.Sprintf("email:%s", onBehalfOf))
 	}
 
 	var response *CreateAgreementResponse
@@ -176,4 +172,59 @@ func (s *AgreementService) CreateAgreement(ctx context.Context, request CreateAg
 
 	return response, nil
 
+}
+
+// GetAgreement retrieves an existing Adobe Sign Agreement
+// ref: https://secure.na1.echosign.com/public/docs/restapi/v6#!/agreements/getAgreementInfo
+func (s *AgreementService) GetAgreement(ctx context.Context, agreementId string) (*Agreement, error) {
+
+	u := fmt.Sprintf("%s/%s", agreementsPath, agreementId)
+
+	req, err := s.client.NewRequest("GET", u, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response *Agreement
+	if _, err := s.client.Do(ctx, req, &response); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+// GetAuditTrail retrieves the PDF file stream containing audit trail information
+// ref: https://secure.na1.echosign.com/public/docs/restapi/v6#!/agreements/getAuditTrail
+func (s *AgreementService) GetAuditTrail(ctx context.Context, agreementId string) (string, error) {
+	u := fmt.Sprintf("%s/%s/auditTrail", agreementsPath, agreementId)
+
+	req, err := s.client.NewRequest("GET", u, nil)
+	if err != nil {
+		return "", err
+	}
+
+	var response string
+	if _, err := s.client.Do(ctx, req, &response); err != nil {
+		return "", err
+	}
+
+	return response, nil
+}
+
+// GetCombinedDocument retrieves a single combined PDF document for the documents associated with an agreement
+// ref: https://secure.na1.echosign.com/public/docs/restapi/v6#!/agreements/getCombinedDocument
+func (s *AgreementService) GetCombinedDocument(ctx context.Context, agreementId string) (string, error) {
+	u := fmt.Sprintf("%s/%s/combinedDocument", agreementsPath, agreementId)
+
+	req, err := s.client.NewRequest("GET", u, nil)
+	if err != nil {
+		return "", err
+	}
+
+	var response string
+	if _, err := s.client.Do(ctx, req, &response); err != nil {
+		return "", err
+	}
+
+	return response, nil
 }

@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	client := adobesign.NewClient("YOUR_INTEGRATION_KEY", "YOUR_SHARD")
+	client := adobesign.NewClient("YOUR_INTEGRATION_KEY", "YOUR_SHARD", "")
 
 	file, err := os.Open("PATH_TO_FILE")
 	defer file.Close()
@@ -24,12 +24,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	document, err := client.TransientDocumentService.UploadTransientDocument(context.Background(), data, "TEST.docx", "")
+	document, err := client.TransientDocumentService.UploadTransientDocument(context.Background(), data, "TEST.docx")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	agreement, err := client.AgreementService.CreateAgreement(context.Background(), adobesign.CreateAgreementRequest{
+	agreement, err := client.AgreementService.CreateAgreement(context.Background(), adobesign.Agreement{
 		FileInfos: []adobesign.FileInfo{{TransientDocumentId: document.TransientDocumentId}},
 		Name:      "test document",
 		ParticipantSetsInfo: []adobesign.ParticipantSetInfo{{
@@ -40,7 +40,7 @@ func main() {
 		},
 		SignatureType: adobesign.SignatureType.Esign,
 		State:         adobesign.AgreementState.InProcess,
-	}, "")
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -60,7 +60,7 @@ func main() {
 			IncludeParticipantsInfo: true,
 			IncludeSignedDocuments:  true,
 		}},
-	}, "")
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
