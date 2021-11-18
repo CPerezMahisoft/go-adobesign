@@ -22,6 +22,7 @@ import (
 
 const (
 	oauthApiVersion = "v2"
+	apiVersion = "v6"
 	userAgent       = "go-adobesign"
 	apiBaseUrl      = "https://api.%s.adobesign.com/api/rest/v6/"
 
@@ -215,8 +216,7 @@ func (c *Client) NewRequest(method, urlStr string, body interface{}) (*http.Requ
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set(headerApiVersion, oauthApiVersion)
+	req.Header.Set(headerApiVersion, apiVersion)
 	req = c.impersonate(req)
 
 	if c.UserAgent != "" {

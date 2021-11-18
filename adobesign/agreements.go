@@ -1,6 +1,7 @@
 package adobesign
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 )
@@ -213,20 +214,20 @@ func (s *AgreementService) GetAuditTrail(ctx context.Context, agreementId string
 
 // GetCombinedDocument retrieves a single combined PDF document for the documents associated with an agreement
 // ref: https://secure.na1.echosign.com/public/docs/restapi/v6#!/agreements/getCombinedDocument
-func (s *AgreementService) GetCombinedDocument(ctx context.Context, agreementId string) (string, error) {
+func (s *AgreementService) GetCombinedDocument(ctx context.Context, agreementId string) ([]byte, error) {
 	u := fmt.Sprintf("%s/%s/combinedDocument", agreementsPath, agreementId)
 
 	req, err := s.client.NewRequest("GET", u, nil)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	var response string
+	var response bytes.Buffer
 	if _, err := s.client.Do(ctx, req, &response); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return response, nil
+	return response.Bytes(), nil
 }
 
 type AgreementCancellationInfo struct {
