@@ -65,6 +65,11 @@ type ParticipantSetInfo struct {
 	VisiblePages   []string     `json:"visiblePages,omitempty"`
 }
 
+type MergeFieldInfo struct {
+	DefaultValue string `json:"defaultValue,omitempty"`
+	FieldName    string `json:"fieldName,omitempty"`
+}
+
 // Agreement defines the request body for creating an agreement
 // ref: https://secure.na1.echosign.com/public/docs/restapi/v6#!/agreements/createAgreement
 type Agreement struct {
@@ -116,19 +121,16 @@ type Agreement struct {
 			Url      string `json:"url,omitempty"`
 		} `json:"urlFileInfo,omitempty"`
 	} `json:"formFieldLayerTemplates,omitempty"`
-	GroupId                    string `json:"groupId,omitempty"`
-	HasFormFieldData           bool   `json:"hasFormFieldData,omitempty"`
-	HasSignerIdentityReport    bool   `json:"hasSignerIdentityReport,omitempty"`
-	Id                         string `json:"id,omitempty"`
-	IsDocumentRetentionApplied bool   `json:"isDocumentRetentionApplied,omitempty"`
-	LastEventDate              string `json:"lastEventDate,omitempty"`
-	Locale                     string `json:"locale,omitempty"`
-	MergeFieldInfo             []struct {
-		DefaultValue string `json:"defaultValue,omitempty"`
-		FieldName    string `json:"fieldName,omitempty"`
-	} `json:"mergeFieldInfo,omitempty"`
-	Message    string `json:"message,omitempty"`
-	NotaryInfo struct {
+	GroupId                    string           `json:"groupId,omitempty"`
+	HasFormFieldData           bool             `json:"hasFormFieldData,omitempty"`
+	HasSignerIdentityReport    bool             `json:"hasSignerIdentityReport,omitempty"`
+	Id                         string           `json:"id,omitempty"`
+	IsDocumentRetentionApplied bool             `json:"isDocumentRetentionApplied,omitempty"`
+	LastEventDate              string           `json:"lastEventDate,omitempty"`
+	Locale                     string           `json:"locale,omitempty"`
+	MergeFieldInfo             []MergeFieldInfo `json:"mergeFieldInfo,omitempty"`
+	Message                    string           `json:"message,omitempty"`
+	NotaryInfo                 struct {
 		Appointment string `json:"appointment,omitempty"`
 		NotaryEmail string `json:"notaryEmail,omitempty"`
 		NotaryType  string `json:"notaryType,omitempty"`
