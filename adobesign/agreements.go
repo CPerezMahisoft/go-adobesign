@@ -70,6 +70,12 @@ type MergeFieldInfo struct {
 	FieldName    string `json:"fieldName,omitempty"`
 }
 
+type Cc struct {
+	Email        string   `json:"email,omitempty"`
+	Label        string   `json:"label,omitempty"`
+	VisiblePages []string `json:"visiblePages,omitempty"`
+}
+
 // Agreement defines the request body for creating an agreement
 // ref: https://secure.na1.echosign.com/public/docs/restapi/v6#!/agreements/createAgreement
 type Agreement struct {
@@ -78,13 +84,9 @@ type Agreement struct {
 	ParticipantSetsInfo []ParticipantSetInfo `json:"participantSetsInfo,omitempty"`
 	SignatureType       string               `json:"signatureType,omitempty"`
 	State               string               `json:"state,omitempty"`
-	Ccs                 []struct {
-		Email        string   `json:"email,omitempty"`
-		Label        string   `json:"label,omitempty"`
-		VisiblePages []string `json:"visiblePages,omitempty"`
-	} `json:"ccs,omitempty"`
-	CreatedDate string `json:"createdDate,omitempty"`
-	DeviceInfo  struct {
+	Ccs                 []Cc                 `json:"ccs,omitempty"`
+	CreatedDate         string               `json:"createdDate,omitempty"`
+	DeviceInfo          struct {
 		ApplicationDescription string `json:"applicationDescription,omitempty"`
 		DeviceDescription      string `json:"deviceDescription,omitempty"`
 		DeviceTime             string `json:"deviceTime,omitempty"`
