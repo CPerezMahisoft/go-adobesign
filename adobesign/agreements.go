@@ -161,6 +161,47 @@ type CreateAgreementResponse struct {
 	Id string `json:"id,omitempty"`
 }
 
+type ReminderInfo struct {
+	// RecipientParticipantIds A list of one or more participant IDs that the reminder should be sent to. These must
+	//be recipients of the agreement and not sharees or cc's.
+	RecipientParticipantIds []string `json:"recipientParticipantIds"`
+	// Status ['ACTIVE' or 'CANCELED' or 'COMPLETE']: Current status of the reminder. The only valid update in a PUT
+	//is from ACTIVE to CANCELED. Must be provided as ACTIVE in a POST.
+	Status string `json:"status"`
+	// FirstReminderDelay Integer which specifies the delay in hours before sending the first reminder.
+	//This is an optional field. The minimum value allowed is 1 hour and the maximum value can’t be more than the
+	//difference of agreement creation and expiry time of the agreement in hours.
+	//If this is not specified but the reminder frequency is specified, then the first reminder will be sent based
+	//on frequency. Cannot be updated in a PUT.
+	FirstReminderDelay int `json:"firstReminderDelay,omitempty"`
+	// Frequency ['DAILY_UNTIL_SIGNED' or 'WEEKDAILY_UNTIL_SIGNED' or 'EVERY_OTHER_DAY_UNTIL_SIGNED' or
+	//'EVERY_THIRD_DAY_UNTIL_SIGNED' or 'EVERY_FIFTH_DAY_UNTIL_SIGNED' or 'WEEKLY_UNTIL_SIGNED' or 'ONCE']: The
+	//frequency at which reminder will be sent until the agreement is completed.
+	//If frequency is not provided, the reminder will be sent once (if the agreement is available at the specified
+	//time) with the delay based on the firstReminderDelay field and will never repeat again. If the agreement is
+	//not available at that time, reminder will not be sent. Cannot be updated in a PUT,
+	Frequency string `json:"frequency,omitempty"`
+	// LastSentDate The date when the reminder was last sent. Only provided in GET.
+	LastSentDate string `json:"lastSentDate,omitempty"`
+	// NextSentDate The date when the reminder is scheduled to be sent next. When provided in POST request, frequency
+	//needs to be ONCE (or not specified), startReminderCounterFrom needs to be REMINDER_CREATION (or not specified)
+	//and firstReminderDelay needs to be 0 (or not specified). Cannot be updated in a PUT. Format would be
+	//yyyy-MM-dd'T'HH:mm:ssZ
+	NextSentDate string `json:"nextSentDate,omitempty"`
+	// Note An optional message sent to the recipients, describing why their participation is required.
+	Note string `json:"note,omitempty"`
+	// ReminderId An identifier of the reminder resource created on the server. If provided in POST or PUT, it will
+	//be ignored
+	ReminderId string `json:"reminderId,omitempty"`
+	// StartReminderCounterFrom ['AGREEMENT_AVAILABILITY' or 'REMINDER_CREATION']: Reminder can be sent based on when
+	//the agreement becomes available or when the reminder is created
+	StartReminderCounterFrom string `json:"startReminderCounterFrom,omitempty"`
+}
+
+type ReminderCreationResult struct {
+	Id string `json:"id"`
+}
+
 // CreateAgreement creates a new Adobe Sign Agreement
 // ref: https://secure.na1.echosign.com/public/docs/restapi/v6#!/agreements/createAgreement
 func (s *AgreementService) CreateAgreement(ctx context.Context, request Agreement) (*CreateAgreementResponse, error) {
@@ -257,4 +298,19 @@ func (s *AgreementService) UpdateAgreementState(ctx context.Context, agreementId
 
 	_, err = s.client.Do(ctx, req, nil)
 	return err
+}
+
+func (s *AgreementService) CreateReminder(ctx context.Context, agreementId string, request ReminderInfo) (*ReminderCreationResult, error) {
+	u := fmt.Sprintf("%s/%s/reminders", agreementsPath, agreementId)
+
+	req, err := s.client.NewRequest("POST", u, request)
+	if err != nil {
+		return nil, err
+	}
+
+	var response ReminderCreationResult
+	if _, err = s.client.Do(ctx, req, &response); err != nil {
+		return nil, err
+	}
+	return &response, nil
 }
